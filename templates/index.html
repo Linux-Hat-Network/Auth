@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Auth</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  </head>
+  <body>
+    <p id="text">You are not connected</p>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="logIn()" id="button">Log In</button>
+    <script>
+      function getCookie(cname) {
+        let name = cname + "=";
+        let decodedCookie = decodeURIComponent(document.cookie);
+        let ca = decodedCookie.split(";");
+        for (let i = 0; i < ca.length; i++) {
+          let c = ca[i];
+          while (c.charAt(0) == " ") {
+            c = c.substring(1);
+          }
+          if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+          }
+        }
+        return "";
+      }
+      let xhr = new XMLHttpRequest();
+      let key = getCookie("KEY");
+      if (key) {
+        xhr.open("POST", "/api/key/getinfo");
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.send(JSON.stringify({ key: key }));
+        xhr.onload = function () {
+          var json = JSON.parse(xhr.response);
+          if (json.user_id) {
+            xhr.open("GET", "/api/user/" + json.user_id);
+            xhr.setRequestHeader(
+              "Content-Type",
+              "application/json;charset=UTF-8"
+            );
+            xhr.send();
+            xhr.onload = function () {
+              var json = JSON.parse(xhr.response);
+              text.innerHTML = "Hi " + json.name + ", you are logged in";
+              button.innerHTML = "Re-log In";
+            };
+          } else {
+            text.innerHTML = "Your key expired... please re-enter your";
+          }
+        };
+      }
+      function logIn() {
+        var name = document.getElementById("username").value;
+        var password = document.getElementById("password").value;
+        xhr.open("POST", "/api/new/key");
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.send(JSON.stringify({ name: name, password: password }));
+        xhr.onload = function () {
+          var json = JSON.parse(xhr.response);
+          if (json.key) {
+            document.cookie =
+              "KEY" + "=" + json.key + "; SameSite=None; domain=linuxhat.net";
+            var redirect = get_param("redirect");
+            if (redirect) {
+              window.location.replace(redirect);
+            } else {
+              location.reload();
+            }
+          } else {
+            text.innerHTML = "Bad username/password.";
+          }
+        };
+      }
+      function get_param(param) {
+        var vars = {};
+        window.location.href.replace(location.hash, "").replace(
+          /[?&]+([^=&]+)=?([^&]*)?/gi, // regexp
+          function (m, key, value) {
+            // callback
+            vars[key] = value !== undefined ? value : "";
+          }
+        );
+        if (param) {
+          return vars[param] ? vars[param] : null;
+        }
+        return vars;
+      }
+    </script>
+  </body>
+</html>
