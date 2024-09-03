@@ -56,28 +56,17 @@ def get_user(id):
     else :
         return jsonify({"status":"FAIL"})
 
-@app.route("/api/new/user", methods=['POST'])
-def new_user():
-    data = request.get_json()
-    if db.session.query(Users).filter_by(name=data.get("name")).first():
-        return jsonify({"status":"BADNAME"})
-    bytes = data.get("password").encode('utf-8')
-    salt = bcrypt.gensalt()
-    hash = bcrypt.hashpw(bytes, salt)
-    user = Users(name=data.get("name"), password=hash, password_salt=salt, is_admin=data.get("is_admin"))
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({"status":"OK"})
-
 @app.route("/api/new/key", methods=['POST'])
 def new_key():
     data = request.get_json()
     user = db.session.query(Users).filter_by(name=data.get("name")).first()
     if user:
-        bytes = data.get("password").encode('utf-8')
+        print("test1")
+        password = data.get("password")
         salt = user.password_salt
-        hach = bcrypt.hashpw(bytes, salt)
+        hach = bcrypt.hashpw(password.encode('utf-8'), salt)
         if hach == user.password:
+            print("test2")
             code = ""
             for i in range(32):
                 code += random.choice(string.ascii_lowercase+string.digits+string.digits)
